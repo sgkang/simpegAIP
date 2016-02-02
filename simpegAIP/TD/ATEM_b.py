@@ -7,17 +7,27 @@ from SimPEG.EM.TDEM.SurveyTDEM import SurveyTDEM
 class FieldsATEM_e_from_b(FieldsTDEM):
     """Fancy Field Storage for a TDEM survey."""
     knownFields = {'b': 'F'}
-    aliasFields = {'e': ['b','E','e_from_b']}
+    aliasFields = {'e': ['b','E','e_from_b'], 'j': ['b','E','j_from_b']}
 
     def startup(self):
+        self.MeI  = self.survey.prob.mesh.getEdgeInnerProduct(invMat=True)
+        self.MeS = self.survey.prob.MeS
         self.MeSigmaI  = self.survey.prob.MeSigmaI
         self.edgeCurlT = self.survey.prob.mesh.edgeCurl.T
         self.MfMui     = self.survey.prob.MfMui
 
     def e_from_b(self, b, srcInd, timeInd):
-        # TODO: implement non-zero js
-        return self.MeSigmaI*(self.edgeCurlT*(self.MfMui*b))
+        e = self.MeSigmaI*(self.edgeCurlT*(self.MfMui*b))
+        if self.survey.prob.waveformType == "GENERAL":
+            e -= self.MeSigmaI*self.MeS*self.survey.prob.current[timeInd+1]
+        return  e
 
+    def j_from_b(self, b, srcInd, timeInd):
+        j = self.MeI*(self.edgeCurlT*(self.MfMui*b))
+        if self.survey.prob.waveformType == "GENERAL":
+            j -= self.MeI*self.MeS*self.survey.prob.current[timeInd+1]
+        return  j
+        
 
 class ProblemATEM_b(BaseATEMProblem):
     """
@@ -58,9 +68,7 @@ class ProblemATEM_b(BaseATEMProblem):
         
         for isrc, src in enumerate(self.survey.srcList):       
             B_n[:,isrc] = F[src,'b',tInd].flatten()
-        # B_n = np.c_[[F[src,'b',tInd] for src in self.survey.srcList]].T        
-        # if B_n.shape[0] is not 1:
-        #     raise NotImplementedError('getRHS not implemented for this shape of B_n')
+
         RHS = (1.0/dt)*self.MfMui*B_n      
         if self.waveformType =="GENERAL":            
             RHS+= self.MfMui*self.mesh.edgeCurl*self.MeSigmaI*self.MeS*self.current[tInd+1]

@@ -10,7 +10,7 @@ class BaseAEMProblem(BaseEMProblem):
     def MeS(self):
         """
             Current term: MeS = Me(js)
-        """
+        """        
         if getattr(self, '_MeS', None) is None:
             self._MeS = np.zeros((self.mesh.nE,len(self.survey.srcList)))
             for isrc, src in enumerate(self.survey.srcList):       

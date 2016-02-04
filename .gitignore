@@ -41,3 +41,4 @@ docs/_build/
 Makefile
 
 *.ipynb_checkpoints
+*.pyc

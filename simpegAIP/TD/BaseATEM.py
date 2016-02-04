@@ -28,7 +28,6 @@ class BaseATEMProblem(BaseAEMProblem,BaseTimeProblem):
     def forward(self, m, RHS, F=None):
         self.curModel = m
         F = F or FieldsTDEM(self.mesh, self.survey)
-
         dtFact = None
         Ainv   = None
         for tInd, dt in enumerate(self.timeSteps):

@@ -1,21 +1,24 @@
 from simpegAIP.TD import BaseATEMProblem
-from SimPEG.Utils import mkvc, sdiag
+from SimPEG.Utils import mkvc, sdiag, sdInv
 import numpy as np
 from SimPEG.EM.TDEM.BaseTDEM import FieldsTDEM
 from SimPEG.EM.TDEM.SurveyTDEM import SurveyTDEM
+from BaseATEMIP import BaseATEMIPProblem_b
+from simpegAIP.TD.Utils import ColeCole, transFilt, uniqueRows
+
 
 class FieldsATEMIP_store_bej(FieldsTDEM):
     """Fancy Field Storage for a TDEM survey."""
     knownFields = {'b': 'F','e': 'E','j': 'E'}
-
+    aliasFields = None
     
-    def startup(self):
-        self.MeI  = self.survey.prob.MeI
-        self.MeS = self.survey.prob.MeS
-        self.edgeCurlT = self.survey.prob.mesh.edgeCurl.T
-        self.MfMui     = self.survey.prob.MfMui
+    # def startup(self):
+    #     self.MeI  = self.survey.prob.MeI
+    #     self.MeS = self.survey.prob.MeS
+    #     self.edgeCurlT = self.survey.prob.mesh.edgeCurl.T
+    #     self.MfMui     = self.survey.prob.MfMui
 
-class ProblemATEMIP_b(BaseATEMIPProblem):
+class ProblemATEMIP_b(BaseATEMIPProblem_b):
 
     """
         Time-Domain EM-IP problem - B-formulation
@@ -27,7 +30,7 @@ class ProblemATEMIP_b(BaseATEMIPProblem):
     sigmaHatDict = {}
 
     def __init__(self, mesh, mapping=None, **kwargs):
-        BaseATEMProblem.__init__(self, mesh, mapping=mapping, **kwargs)
+        BaseATEMIPProblem_b.__init__(self, mesh, mapping=mapping, **kwargs)
 
     solType = 'b' #: Type of the solution, in this case the 'b' field
     surveyPair = SurveyTDEM
@@ -37,6 +40,31 @@ class ProblemATEMIP_b(BaseATEMIPProblem):
     # Internal Methods
     ####################################################
 
+    def sigmaHat(self, t, ColeColefunc=ColeCole):
+        etc = np.c_[self.eta, self.tau, self.c]
+        unqEtc, uETCind, invInd = uniqueRows(etc)
+
+        sigmaHat = []
+        for (ev, tv, cv) in unqEtc:
+            if ev == 0.:
+                sigmaHat.append(0.)
+            else:
+
+                key = '%.5e_%.5f_%.5e_%.5f' %(t, ev, tv, cv)
+                if self.sigmaHatDict.has_key(key):
+                    val = self.sigmaHatDict[key]
+                else:
+                    if t == 0:
+                        # val = transFilt(F,1e-6)
+                        val = ev/(tv*(1.-ev))
+                    else:
+                        F = lambda frq: (1j*2*np.pi*frq)*ColeColefunc(frq, sigmaInf=1., eta=ev, tau=tv, c=cv)
+                        val = transFilt(F,t)
+                    self.sigmaHatDict[key] = val    
+                sigmaHat.append(val)
+        
+        sigmaHat = self.sigmaInf*np.array(sigmaHat)[invInd]
+        return sigmaHat
     
     @property
     def MeSigmaInf(self):
@@ -47,7 +75,7 @@ class ProblemATEMIP_b(BaseATEMIPProblem):
     @property
     def MeI(self):
         if getattr(self, '_MeI', None) is None:
-            self._MeI = mesh.getEdgeInnerProduct(invMat=True)
+            self._MeI = self.mesh.getEdgeInnerProduct(invMat=True)
         return self._MeI
     
     def MeAc(self, dt):
@@ -58,44 +86,34 @@ class ProblemATEMIP_b(BaseATEMIPProblem):
     MeAcI = lambda self, dt: sdInv(self.MeAc(dt))
 
     def MeCnk(self, n, k):
-        tn = self.times(n)
-        tk = self.times(k)
+        tn = self.times[n]
+        tk = self.times[k]
         val = self.sigmaHat(tn-tk)
         return self.mesh.getEdgeInnerProduct(val)
 
     _nJpLast = None
     _JpLast = None
 
-    #This needs to go somewhere ...
-    # def get_e(self, tInd):
-    #     e = np.zeros((self.mesh.nE,len(self.survey.srcList)))        
-    #     for isrc, src in enumerate(self.survey.srcList):       
-    #         e[:,isrc] = F[src,'e',tInd].flatten()
-    # 	return e
-
-    # def get_b(self, tInd):
-    #     b = np.zeros((self.mesh.nF,len(self.survey.srcList)))        
-    #     for isrc, src in enumerate(self.survey.srcList):       
-    #         b[:,isrc] = F[src,'b',tInd].flatten()
-    # 	return b    	
-
-    def getJp(self, tInd):
+    def getJp(self, tInd, F):
     	"""
     		Computation of polarization currents
     	"""
-    	# Not sure ... why 
+    	# It calls twice !!! 
+        # a) getRHS
+        # b) updateFields
+
         if tInd == self._nJpLast:
-        	print ">> Curious when self._nJpLast is used:", self._nJpLast
-            jp = self._JpLast
+			# print ">> Curious when self._nJpLast is used:", self._nJpLast
+			jp = self._JpLast
         else:
-            dt = self.timeSteps(tInd)
+            dt = self.timeSteps[tInd]
             kappa = self.getKappa(dt)
             MeK = self.mesh.getEdgeInnerProduct(kappa)
-            jp = MeK*self.get_e(tInd)            
-            for k in range(tInd):
-                dt = self.timeSteps(k)
-                jp += (dt/2)*self.MeCnk(tInd+1,k)*self.F[:,'e',k+1]
-                jp += (dt/2)*self.MeCnk(tInd+1,k+1)*self.F[:,'e',k+1]
+            jp = MeK*F[:,'e',tInd]
+            for k in range(tInd): 
+                dt = self.timeSteps[k]
+                jp += (dt/2)*self.MeCnk(tInd+1,k)*F[:,'e',k+1]
+                jp += (dt/2)*self.MeCnk(tInd+1,k+1)*F[:,'e',k+1]
             self._nJpLast = tInd
             self._JpLast = jp
         return jp
@@ -111,16 +129,16 @@ class ProblemATEMIP_b(BaseATEMIPProblem):
 
     def getRHS(self, tInd, F):
         dt = self.timeSteps[tInd]        
-        B_last = self.F[:,'b',tInd]
+        B_last = F[:,'b',tInd]
         RHS = self.MfMui*(1/dt)*B_last \
-            - self.MfMui*self.mesh.edgeCurl*self.MeAcI(dt)*self.getJp(tInd) 
+            - self.MfMui*self.mesh.edgeCurl*self.MeAcI(dt)*self.getJp(tInd, F) 
         if self.waveformType != "STEPOFF":
             RHS += self.MfMui*self.mesh.edgeCurl*self.MeAcI(dt)*self.MeS*self.current[tInd+1]
         return RHS
 
-    def updateFields(self, bn, tInd):
+    def updateFields(self, bn, tInd, F):
         dt = self.timeSteps[tInd]
-        jp = self.getJp(tInd)
+        jp = self.getJp(tInd, F)
         en = self.MeAcI(dt)*self.mesh.edgeCurl.T*self.MfMui*bn \
            + self.MeAcI(dt)*jp
         if self.waveformType != "STEPOFF":

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 import unittest
 
-def halfSpaceProblemAnaDiff(showIt=False, srcType="VMD", radius=2.):
+def halfSpaceProblemAnaDiff(showIt=False, srcType="VMD", radius=13.):
 	cs, ncx, ncz, npad = 20., 25, 20, 20
 	hx = [(cs,ncx), (cs,npad,1.3)]
 	hz = [(cs,npad,-1.3), (cs,ncz), (cs,npad,1.3)]
@@ -18,7 +18,7 @@ def halfSpaceProblemAnaDiff(showIt=False, srcType="VMD", radius=2.):
 	sighalf = 1e-3
 	siginf = np.ones(mesh.nC)*1e-8
 	siginf[mesh.gridCC[:,-1]<0.] = sighalf
-	eta = np.ones(mesh.nC)*0.
+	eta = np.ones(mesh.nC)*0.1
 	tau = np.ones(mesh.nC)*0.0005
 	c = np.ones(mesh.nC)*0.7
 	m = np.r_[siginf, eta, tau, c]
@@ -69,8 +69,8 @@ class FDEM_bTests(unittest.TestCase):
 	def test_analytic_VMD(self):
 		self.assertTrue(halfSpaceProblemAnaDiff(showIt=False, srcType="VMD") < 0.3)	
 	
-	# def test_analytic_CircularLoop(self):
-	# 	self.assertTrue(halfSpaceProblemAnaDiff(showIt=True, srcType="CircularLoop") < 0.3)			
+	def test_analytic_CircularLoop(self):
+		self.assertTrue(halfSpaceProblemAnaDiff(showIt=False, srcType="CircularLoop") < 0.3)			
 
 if __name__ == '__main__':
     unittest.main()

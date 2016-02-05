@@ -1,3 +1,4 @@
 # from simpegAIP import *
 import TD
-import Base
+import FD
+from Base import ColeColeMap

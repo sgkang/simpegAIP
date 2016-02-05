@@ -60,7 +60,7 @@ def halfSpaceProblemAnaVMDDiff(showIt=False, waveformType="STEPOFF"):
 class TDEM_bTests(unittest.TestCase):
 
 	def test_analytic_STEPOFF(self):
-		self.assertTrue(halfSpaceProblemAnaVMDDiff(showIt=True,waveformType="STEPOFF") < 0.3)	
+		self.assertTrue(halfSpaceProblemAnaVMDDiff(showIt=False,waveformType="STEPOFF") < 0.3)	
 		
 	def test_analytic_GENERAL(self):
 		self.assertTrue(halfSpaceProblemAnaVMDDiff(showIt=False, waveformType="GENERAL") < 0.3)	        

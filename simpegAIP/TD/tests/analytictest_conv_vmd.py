@@ -1,5 +1,6 @@
 from scipy.constants import mu_0
-from simpegAIP.TD import ProblemATEMIP_b, ColeColeTimeMap
+from simpegAIP.TD import ProblemATEMIP_b
+from simpegAIP import ColeColeMap
 import SimPEG.EM as EM
 from SimPEG import Mesh, np
 import EMTD
@@ -21,7 +22,7 @@ def halfSpaceProblemAnaVMDDiff(showIt=False, waveformType="STEPOFF"):
 	tau = np.ones(mesh.nC)*0.005
 	c = np.ones(mesh.nC)*0.7
 	m = np.r_[siginf, eta, tau, c]
-	mapping = ColeColeTimeMap(mesh)
+	mapping = ColeColeMap(mesh)
 	prb = ProblemATEMIP_b(mesh, mapping=mapping)	
 
 	if waveformType =="GENERAL":

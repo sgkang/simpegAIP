@@ -8,14 +8,14 @@ class ColeColePropMap(Maps.PropMap):
         Property Map for EM Problems. The electrical conductivity (\\(\\sigma\\)) is the default inversion property, and the default value of the magnetic permeability is that of free space (\\(\\mu = 4\\pi\\times 10^{-7} \\) H/m)
     """
 
-    sigmaInf = Maps.Property("Electrical Conductivity", defaultInvProp=True, propertyLink=('rhoInf',Maps.ReciprocalMap))
+    sigmaInf = Maps.Property("Electrical Conductivity", defaultInvProp=True, propertyLink=('rhoInf', Maps.ReciprocalMap))
     rhoInf   = Maps.Property("Electrical Resistivity", propertyLink=('sigmaInf', Maps.ReciprocalMap)) 
 
-    eta = Maps.Property("Electrical Conductivity",defaultVal=0)
-    tau = Maps.Property("Electrical Conductivity",defaultVal=0.001)
-    c   = Maps.Property("Electrical Conductivity",defaultVal=0.5)
+    eta = Maps.Property("Electrical Conductivity", defaultVal=0)
+    tau = Maps.Property("Electrical Conductivity", defaultVal=0.001)
+    c   = Maps.Property("Electrical Conductivity", defaultVal=0.5)
     
-    mu  = Maps.Property("Inverse Magnetic Permeability", defaultVal=mu_0, propertyLink=('mui',Maps.ReciprocalMap))
+    mu  = Maps.Property("Inverse Magnetic Permeability", defaultVal=mu_0, propertyLink=('mui', Maps.ReciprocalMap))
     mui = Maps.Property("Inverse Magnetic Permeability", defaultVal=1./mu_0, propertyLink=('mu', Maps.ReciprocalMap))
 
 
@@ -70,3 +70,15 @@ class BaseAEMProblem(BaseEMProblem):
 #     def nP(self):
 #         """Number of parameters in the model."""
 #         return self.nC*4       
+
+
+if __name__ == '__main__':
+    from simpegAIP.FD.Utils import ColeColePelton, ColeColeSeigel
+
+    maps = [("sigmaInf", Maps.IdentityMap(nP=5))]
+    PM = ColeColePropMap(maps)
+
+    m = PM(np.ones(5))
+    print m.mu
+
+    print ColeColePelton(1, m.sigmaInf, m.eta, m.tau, m.c)

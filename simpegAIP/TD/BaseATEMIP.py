@@ -21,9 +21,6 @@ class BaseATEMIPProblem_b(BaseAEMProblem,BaseTimeProblem):
 
     _FieldsForward_pair = FieldsTDEM  #: used for the forward calculation only
 
-    def setPropMap(self, mapsdict):
-        self._mapping = self.PropMap(mapsdict)
-
     @property
     def deleteTheseOnModelUpdate(self):
         toDelete = []

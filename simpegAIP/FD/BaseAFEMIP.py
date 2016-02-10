@@ -36,15 +36,12 @@ class BaseAFEMIPProblem(BaseFDEMProblem):
 
     def __init__(self, mesh,**kwargs):
         BaseFDEMProblem.__init__(self, mesh, **kwargs)
-    
-    def setPropMap(self, mapsdict):
-        self._mapping = self.PropMap(mapsdict)
 
     @property
     def deleteTheseOnModelUpdate(self):
         toDelete = []
-        # Later put somethings... 
-        return toDelete             
+        # Later put somethings...
+        return toDelete
     # @property
     # def curModel(self):
     #     """
@@ -54,7 +51,7 @@ class BaseAFEMIPProblem(BaseFDEMProblem):
 
     # @curModel.setter
     # def curModel(self, value):
-                
+
     #     if value is self.curModel:
     #         return # it is the same!
     #     if self.PropMap is not None:
@@ -73,25 +70,25 @@ class BaseAFEMIPProblem(BaseFDEMProblem):
 
     #     for prop in self.deleteTheseOnModelUpdate:
     #         if hasattr(self, prop):
-    #             delattr(self, prop)          
+    #             delattr(self, prop)
 
     def MeSigma(self, freq):
         """
             Edge inner product matrix for \\(\\sigma\\). Used in the E-B formulation
-        """            
+        """
         sigma = ColeColePelton(freq, self.curModel.sigmaInf, self.curModel.eta, self.curModel.tau, self.curModel.c)
         return self.mesh.getEdgeInnerProduct(sigma)
 
-    
+
 
     def MeSigmaI(self, freq):
         """
-            Inverse of the edge inner product matrix for \\(\\sigma\\). 
+            Inverse of the edge inner product matrix for \\(\\sigma\\).
         """
         sigma = ColeColePelton(freq, self.curModel.sigmaInf, self.curModel.eta, self.curModel.tau, self.curModel.c)
         return self.mesh.getEdgeInnerProduct(sigma, invMat=True)
 
-    
+
     def fields(self, m=None):
         """
             Solve the forward problem for the fields.
@@ -131,5 +128,3 @@ if __name__ == '__main__':
     print model.tau
     print model.c
     print model.eta
-
-

@@ -21,10 +21,9 @@ def halfSpaceProblemAnaVMDDiff(showIt=False, waveformType="STEPOFF"):
 	tau = np.ones(mesh.nC)*0.005
 	c = np.ones(mesh.nC)*0.7
 	m = np.r_[siginf, eta, tau, c]
-	prb = ProblemATEMIP_b(mesh)	
 	iMap = Maps.IdentityMap(nP=int(mesh.nC))
-	mapsdict = {'maps':[('sigmaInf', iMap), ('eta', iMap), ('tau', iMap), ('c', iMap)],'slices':{}}
-	prb.setPropMap(mapsdict)
+	maps = [('sigmaInf', iMap), ('eta', iMap), ('tau', iMap), ('c', iMap)]
+	prb = ProblemATEMIP_b(mesh, mapping = maps)	
 
 	if waveformType =="GENERAL":
 		# timeon = np.cumsum(np.r_[np.ones(10)*1e-3, np.ones(10)*5e-4, np.ones(10)*1e-4])

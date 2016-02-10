@@ -3,7 +3,6 @@ from simpegAIP.FD import AFEMIPProblem_b
 from SimPEG import EM
 from pymatsolver import MumpsSolver
 from scipy.constants import mu_0
-from simpegAIP import ColeColeMap
 from simpegAIP.FD.Utils import hzAnalyticDipoleF_CC, hzAnalyticCentLoopF_CC
 from scipy.constants import mu_0
 import matplotlib.pyplot as plt
@@ -22,30 +21,32 @@ def halfSpaceProblemAnaDiff(showIt=False, srcType="VMD", radius=13.):
 	tau = np.ones(mesh.nC)*0.0005
 	c = np.ones(mesh.nC)*0.7
 	m = np.r_[siginf, eta, tau, c]
-	m0 = np.r_[siginf, eta*0., tau, c]
-	mapping = ColeColeMap(mesh)
 
 	offset = 8.
 	frequency = np.logspace(1, 4, 41)
 	srcLists = []
 	nfreq = frequency.size
 	if srcType == "VMD":
-		rx0 = EM.FDEM.Rx(np.array([[offset, 0., 0.]]), 'bzr')
-		rx1 = EM.FDEM.Rx(np.array([[offset, 0., 0.]]), 'bzi')
+		rx0 = EM.FDEM.Rx(np.array([[offset, 0., 0.]]), 'bzr_sec')
+		rx1 = EM.FDEM.Rx(np.array([[offset, 0., 0.]]), 'bzi_sec')
 		bz_ana = mu_0*hzAnalyticDipoleF_CC(offset, frequency, sigmaInf=sighalf, eta=eta[0], tau=tau[0], c=c[0])		
 		for ifreq in range(nfreq):
 		    src = EM.FDEM.Src.MagDipole([rx0, rx1], loc = np.array([[0., 0., 0.]]), freq=frequency[ifreq])
 		    srcLists.append(src)
 	elif srcType == "CircularLoop":
-		rx0 = EM.FDEM.Rx(np.array([[0., 0., 0.]]), 'bzr')
-		rx1 = EM.FDEM.Rx(np.array([[0., 0., 0.]]), 'bzi')		
+		rx0 = EM.FDEM.Rx(np.array([[0., 0., 0.]]), 'bzr_sec')
+		rx1 = EM.FDEM.Rx(np.array([[0., 0., 0.]]), 'bzi_sec')		
 		bz_ana = mu_0*hzAnalyticCentLoopF_CC(radius, frequency, sigmaInf=sighalf, eta=eta[0], tau=tau[0], c=c[0])		
 		for ifreq in range(nfreq):
 		    src = EM.FDEM.Src.CircularLoop([rx0, rx1], frequency[ifreq], np.array([[0., 0., 0.]]), radius=radius)
 		    srcLists.append(src)
 
 	survey = EM.FDEM.Survey(srcLists)
-	prob = AFEMIPProblem_b(mesh, mapping=mapping)
+	prob = AFEMIPProblem_b(mesh)
+	iMap = Maps.IdentityMap(nP=int(mesh.nC))
+	mapsdict = {'maps':[('sigmaInf', iMap), ('eta', iMap), ('tau', iMap), ('c', iMap)],'slices':{}}
+	prob.setPropMap(mapsdict)
+
 	prob.Solver = MumpsSolver
 	survey.pair(prob)
 	obs = survey.dpred(m)

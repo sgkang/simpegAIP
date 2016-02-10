@@ -41,7 +41,7 @@ class ProblemATEMIP_b(BaseATEMIPProblem_b):
     ####################################################
 
     def sigmaHat(self, t, ColeColefunc=ColeCole):
-        etc = np.c_[self.eta, self.tau, self.c]
+        etc = np.c_[self.curModel.eta, self.curModel.tau, self.curModel.c]
         unqEtc, uETCind, invInd = uniqueRows(etc)
 
         sigmaHat = []
@@ -63,13 +63,13 @@ class ProblemATEMIP_b(BaseATEMIPProblem_b):
                     self.sigmaHatDict[key] = val    
                 sigmaHat.append(val)
         
-        sigmaHat = self.sigmaInf*np.array(sigmaHat)[invInd]
+        sigmaHat = self.curModel.sigmaInf*np.array(sigmaHat)[invInd]
         return sigmaHat
     
     @property
     def MeSigmaInf(self):
     	if getattr(self, '_MeSigmaInf', None) is None:
-            self._MeSigmaInf = self.mesh.getEdgeInnerProduct(self.sigmaInf)
+            self._MeSigmaInf = self.mesh.getEdgeInnerProduct(self.curModel.sigmaInf)
         return self._MeSigmaInf
 
     @property
@@ -80,7 +80,7 @@ class ProblemATEMIP_b(BaseATEMIPProblem_b):
     
     def MeAc(self, dt):
         gamma = self.getGamma(dt)
-        val = self.sigmaInf - gamma
+        val = self.curModel.sigmaInf - gamma
         return self.mesh.getEdgeInnerProduct(val)                    
 
     MeAcI = lambda self, dt: sdInv(self.MeAc(dt))
@@ -147,7 +147,7 @@ class ProblemATEMIP_b(BaseATEMIPProblem_b):
         return en, jn
 
     def getKappa(self, dt):
-        setc = np.c_[self.sigmaInf, self.eta, self.tau, self.c]
+        setc = np.c_[self.curModel.sigmaInf, self.curModel.eta, self.curModel.tau, self.curModel.c]
         unqEtc, uETCind, invInd = uniqueRows(setc)
         kappaVals = []
         for (sv, ev, tv, cv) in unqEtc:
@@ -163,7 +163,7 @@ class ProblemATEMIP_b(BaseATEMIPProblem_b):
         return kappa
 
     def getGamma(self, dt):
-        setc = np.c_[self.sigmaInf, self.eta, self.tau, self.c]
+        setc = np.c_[self.curModel.sigmaInf, self.curModel.eta, self.curModel.tau, self.curModel.c]
         unqEtc, uETCind, invInd = uniqueRows(setc)
         gammaVals = []
         for (sv, ev, tv, cv) in unqEtc:

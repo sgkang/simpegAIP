@@ -4,12 +4,13 @@ from SimPEG.EM.TDEM.BaseTDEM import FieldsTDEM
 from simpegAIP.Base import BaseAEMProblem
 from SimPEG.Problem import BaseTimeProblem
 from SimPEG.Maps import IdentityMap
+from simpegAIP.Base import ColeColePropMap
 
 
 class BaseATEMIPProblem_b(BaseAEMProblem,BaseTimeProblem):
     """docstring for BaseTDEMProblem_b"""    
 
-    PropMap = None
+    PropMap = ColeColePropMap
     sigmaInf = None
     eta = None
     tau = None
@@ -20,39 +21,14 @@ class BaseATEMIPProblem_b(BaseAEMProblem,BaseTimeProblem):
 
     _FieldsForward_pair = FieldsTDEM  #: used for the forward calculation only
 
+    def setPropMap(self, mapsdict):
+        self._mapping = self.PropMap(mapsdict)
+
     @property
     def deleteTheseOnModelUpdate(self):
         toDelete = []
         # Later put somethings... 
-        return toDelete
-    
-    @property
-    def curModel(self):
-        """
-            Sets the current model, and removes dependent mass matrices.
-        """
-        return getattr(self, '_curModel', None)
-
-    @curModel.setter
-    def curModel(self, value):
-        
-        if value is self.curModel:
-            return # it is the same!
-        if self.PropMap is not None:
-            self._curModel = self.mapping(value)
-        else:
-            self._curModel = Models.Model(value, self.mapping)
-            self._curModel.mui = 1./mu_0
-            m = value.reshape((self.mesh.nC, 4), order="F")
-            # Set Cole-Cole parameters
-            self.sigmaInf = m[:,0]
-            self.eta = m[:,1]
-            self.tau = m[:,2]
-            self.c = m[:,3]              
-                      
-        for prop in self.deleteTheseOnModelUpdate:
-            if hasattr(self, prop):
-                delattr(self, prop)        
+        return toDelete 
 
     def fields(self, m):
         if self.verbose: print '%s\nCalculating fields(m)\n%s'%('*'*50,'*'*50)

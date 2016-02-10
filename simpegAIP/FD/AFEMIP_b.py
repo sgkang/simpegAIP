@@ -8,23 +8,6 @@ from SimPEG.EM.Utils import omega
 from BaseAFEMIP import BaseAFEMIPProblem
 from simpegAIP.FD.Utils import ColeColePelton, ColeColeSeigel
 
-class FieldsIP_b(Fields_b):
-
-    def __init__(self,mesh,survey,**kwargs):
-        Fields_b.__init__(self,mesh,survey,**kwargs)
-
-    def _b(self, bSolution, srcList):
-        out = self._bSecondary(bSolution, srcList)
-        if self.prob.addprimary == True:
-            out += self._bPrimary(bSolution, srcList)        
-        return out
-
-    def startup(self):
-        self.prob = self.survey.prob
-        self._edgeCurl = self.survey.prob.mesh.edgeCurl
-        self._MfMui = self.survey.prob.MfMui
-        self._Me = self.survey.prob.Me
-
 class AFEMIPProblem_b(BaseAFEMIPProblem):
     """
         We eliminate \\\(\\\mathbf{e}\\\) using
@@ -45,8 +28,8 @@ class AFEMIPProblem_b(BaseAFEMIPProblem):
 
     _fieldType = 'b'
     _eqLocs    = 'FE'
-    fieldsPair = FieldsIP_b
-    addprimary = False
+    fieldsPair = Fields_b
+    # addprimary = False
 
     def __init__(self, mesh, **kwargs):
         BaseAFEMIPProblem.__init__(self, mesh, **kwargs)

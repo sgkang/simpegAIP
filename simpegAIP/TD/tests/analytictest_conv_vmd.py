@@ -1,8 +1,7 @@
 from scipy.constants import mu_0
 from simpegAIP.TD import ProblemATEMIP_b
-from simpegAIP import ColeColeMap
 import SimPEG.EM as EM
-from SimPEG import Mesh, np
+from SimPEG import Mesh, np, Maps
 import EMTD
 from EMTD.Utils import hzAnalyticDipoleT_CC
 from pymatsolver import MumpsSolver
@@ -22,8 +21,10 @@ def halfSpaceProblemAnaVMDDiff(showIt=False, waveformType="STEPOFF"):
 	tau = np.ones(mesh.nC)*0.005
 	c = np.ones(mesh.nC)*0.7
 	m = np.r_[siginf, eta, tau, c]
-	mapping = ColeColeMap(mesh)
-	prb = ProblemATEMIP_b(mesh, mapping=mapping)	
+	prb = ProblemATEMIP_b(mesh)	
+	iMap = Maps.IdentityMap(nP=int(mesh.nC))
+	mapsdict = {'maps':[('sigmaInf', iMap), ('eta', iMap), ('tau', iMap), ('c', iMap)],'slices':{}}
+	prb.setPropMap(mapsdict)
 
 	if waveformType =="GENERAL":
 		# timeon = np.cumsum(np.r_[np.ones(10)*1e-3, np.ones(10)*5e-4, np.ones(10)*1e-4])
@@ -57,7 +58,6 @@ def halfSpaceProblemAnaVMDDiff(showIt=False, waveformType="STEPOFF"):
 		plt.loglog(rx.times, abs(out), 'b.')
 		plt.show()	
 	return err
-
 
 class TDEM_bTests(unittest.TestCase):
 
